@@ -30,13 +30,11 @@ import software.bernie.geckolib.renderer.layer.ItemArmorGeoLayer;
 import software.bernie.geckolib.util.RenderUtils;
 
 public class ScavRenderer<T extends AbstractScavEntity> extends GeoEntityRenderer<T> {
-    public EntityRendererProvider.Context context;
     public float rotation = 0f;
     public ItemArmorGeoLayer<T> LAYER;
     public BlockAndItemGeoLayer<T> ITEMLAYER;
     public ScavRenderer(EntityRendererProvider.Context renderManager, GeoModel<T> model) {
         super(renderManager, model);
-        this.context = renderManager;
         ITEMLAYER = new BlockAndItemGeoLayer<>(this) {
             @Nullable
             @Override
@@ -102,29 +100,10 @@ public class ScavRenderer<T extends AbstractScavEntity> extends GeoEntityRendere
         addRenderLayer(LAYER);
         addRenderLayer(ITEMLAYER);
     }
-
-    @Override
-    public void render(T entity, float entityYaw, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
-        poseStack.pushPose();
-
-//if(entity.deadAsContainer) {
-//    if(this.rotation != 90) {
-//        rotation += 0.5f;
-//    }
-//    poseStack.mulPose(Axis.YP.rotationDegrees(rotation));
-//}
-
-        super.render(entity, entityYaw, partialTick, poseStack, bufferSource, packedLight);
-        poseStack.popPose();
-    }
-    public int getPackedOverlay(T animatable, float u) {
-            return OverlayTexture.pack(OverlayTexture.u(u), OverlayTexture.v(animatable.hurtTime > 0));
-    }
-
-    @Override
-    public Color getRenderColor(T animatable, float partialTick, int packedLight) {
-        return super.getRenderColor(animatable, partialTick, packedLight);
-    }
+    /// EVIL DEPRECIATED WITCHCRAFT DONT USE
+    //public int getPackedOverlay(T animatable, float u) {
+    //        return OverlayTexture.pack(OverlayTexture.u(u), OverlayTexture.v(animatable.hurtTime > 0));
+    //}
 
     @Override
     protected float getDeathMaxRotation(T animatable) {
@@ -137,31 +116,5 @@ public class ScavRenderer<T extends AbstractScavEntity> extends GeoEntityRendere
             return false;
         }
         return super.shouldShowName(animatable);
-    }
-
-    @Override
-    public void renderRecursively(PoseStack poseStack, T animatable, GeoBone bone, RenderType renderType, MultiBufferSource bufferSource, VertexConsumer buffer, boolean isReRender, float partialTick, int packedLight, int packedOverlay, float red, float green, float blue, float alpha) {
-        super.renderRecursively(poseStack, animatable, bone, renderType, bufferSource, buffer, isReRender, partialTick, packedLight, packedOverlay, red, green, blue, alpha);
-
-        /// DEPRECATED METHOD OF RENDERING HAND ITEMS
-
-        //if (bone.getName().equals("third_person_right_hand")) {
-       //
-       //    poseStack.pushPose();
-
-       //    RenderUtils.translateMatrixToBone(poseStack, bone);
-       //    poseStack.translate(0.4, 0.8, -0.1);
-       //    poseStack.mulPose(Axis.XN.rotationDegrees(90));
-       //    poseStack.scale(1.15f, 1.15f, 1.15f);
-       //    ItemStack itemstack = animatable.getMainHandItem();
-       //    if(!itemstack.isEmpty()){
-       //        Minecraft minecraft = Minecraft.getInstance();
-       //        BakedModel model = minecraft.getItemRenderer().getModel(itemstack, minecraft.player.level(), minecraft.player, minecraft.player.getId() + ItemDisplayContext.THIRD_PERSON_RIGHT_HAND.ordinal());
-       //        context.getItemRenderer().render(itemstack, ItemDisplayContext.THIRD_PERSON_RIGHT_HAND, false, poseStack, bufferSource, packedLight, packedOverlay, model);
-       //    }
-
-       //    poseStack.popPose();
-
-       //}
     }
 }

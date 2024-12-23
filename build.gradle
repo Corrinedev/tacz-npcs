@@ -157,9 +157,8 @@ dependencies {
     // then special handling is done to allow a setup of a vanilla dependency without the use of an external repository.
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     implementation fg.deobf("curse.maven:smartbrainlib-661293:5654964")
-    implementation fg.deobf("curse.maven:geckolib-388172:5675221")
+    implementation fg.deobf("curse.maven:geckolib-388172:5675230")
     implementation fg.deobf("curse.maven:timeless-and-classics-zero-1028108:5722050")
-    implementation fg.deobf("curse.maven:physics-mod-442735:5306442")
     implementation fg.deobf("curse.maven:playeranimator-658587:4587214")
 
     // Example mod dependency with JEI - using fg.deobf() ensures the dependency is remapped to your development mappings

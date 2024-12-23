@@ -98,6 +98,7 @@ public abstract class AbstractScavEntity extends PathfinderMob implements GeoEnt
     protected AbstractScavEntity(EntityType<? extends PathfinderMob> p_21683_, Level p_21684_) {
         super(p_21683_, p_21684_);
         initialGunOperateData();
+        setMaxUpStep(1f);
         GeckoLibNetwork.registerSyncedAnimatable(this);
         inventory = new SimpleContainer(27);
         this.tacz$draw = new LivingEntityDrawGun(this.tacz$shooter, this.tacz$data);
@@ -243,9 +244,13 @@ public abstract class AbstractScavEntity extends PathfinderMob implements GeoEnt
                 new Panic<>().setRadius(16).speedMod((e) -> 1.1f).startCondition((e) -> this.getHealth() <= 10).whenStopping((e) -> panic = false).whenStarting( (e)-> panic = true).stopIf((e) -> this.getTarget() == null && !this.getTarget().hasLineOfSight(this)).runFor((e) -> 20),
                 (new LookAtTarget<>()).runFor((entity) -> {
             return RandomSource.create().nextInt(40, 300);
-        }), (new StrafeTarget<>()).speedMod(0.75f).strafeDistance(24).stopStrafingWhen((entity) -> {
-            return this.getTarget() == null || !this.getMainHandItem().is(ModItems.MODERN_KINETIC_GUN.get());
-        }).startCondition((e) -> this.getMainHandItem().is(ModItems.MODERN_KINETIC_GUN.get())), new MoveToWalkTarget<>()});
+        }), new OneRandomBehaviour<>(new ExtendedBehaviour[]{
+                new StrafeTarget<>().speedMod(0.75f).strafeDistance(24).stopStrafingWhen((entity) -> {
+                    return this.getTarget() == null || !this.getMainHandItem().is(ModItems.MODERN_KINETIC_GUN.get());
+                }).startCondition((e) -> this.getMainHandItem().is(ModItems.MODERN_KINETIC_GUN.get())),
+                new MoveToWalkTarget<>()
+        }),
+        });
     }
 
     @Override
