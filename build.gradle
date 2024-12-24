@@ -159,7 +159,6 @@ dependencies {
     implementation fg.deobf("curse.maven:smartbrainlib-661293:5654964")
     implementation fg.deobf("curse.maven:geckolib-388172:5675230")
     implementation fg.deobf("curse.maven:timeless-and-classics-zero-1028108:5722050")
-    implementation fg.deobf("curse.maven:playeranimator-658587:4587214")
 
     // Example mod dependency with JEI - using fg.deobf() ensures the dependency is remapped to your development mappings
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime

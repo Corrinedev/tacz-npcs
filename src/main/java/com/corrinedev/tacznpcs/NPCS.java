@@ -4,8 +4,10 @@ import com.corrinedev.tacznpcs.common.registry.AttributeRegistry;
 import com.corrinedev.tacznpcs.common.registry.EntityTypeRegistry;
 import com.corrinedev.tacznpcs.common.registry.ItemRegistry;
 import com.mojang.logging.LogUtils;
+import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -39,7 +41,11 @@ public class NPCS {
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);
         ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, ClientConfig.SPEC);
     }
-
+    @SubscribeEvent
+    private void addCreative(BuildCreativeModeTabContentsEvent event) {
+        if (event.getTabKey() == CreativeModeTabs.SPAWN_EGGS) event.accept(ItemRegistry.BANDITSPAWN.get());
+        if (event.getTabKey() == CreativeModeTabs.SPAWN_EGGS) event.accept(ItemRegistry.DUTYSPAWN.get());
+    }
     private void commonSetup(final FMLCommonSetupEvent event) {
         // Some common setup code
     }
