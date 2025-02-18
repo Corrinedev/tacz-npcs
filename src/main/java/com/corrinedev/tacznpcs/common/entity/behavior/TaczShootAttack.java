@@ -3,23 +3,18 @@ package com.corrinedev.tacznpcs.common.entity.behavior;
 import com.corrinedev.tacznpcs.common.entity.AbstractScavEntity;
 import com.mojang.datafixers.util.Pair;
 import com.tacz.guns.api.entity.ShootResult;
-import com.tacz.guns.item.ModernKineticGunItem;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.minecraft.client.Camera;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.behavior.BehaviorUtils;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.memory.MemoryStatus;
-import net.minecraftforge.fml.ModList;
 import net.tslat.smartbrainlib.api.core.behaviour.ExtendedBehaviour;
 import net.tslat.smartbrainlib.util.BrainUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.Objects;
 
 public class TaczShootAttack<E extends AbstractScavEntity> extends ExtendedBehaviour<E> {
     private static final List<Pair<MemoryModuleType<?>, MemoryStatus>> MEMORY_REQUIREMENTS;
@@ -48,8 +43,7 @@ public class TaczShootAttack<E extends AbstractScavEntity> extends ExtendedBehav
 
     @Override
     protected void start(E entity) {
-        assert this.target != null;
-            if (BehaviorUtils.entityIsVisible(entity.getBrain(), Objects.requireNonNull(entity.getTarget()))) {
+            if (this.target != null && entity.getTarget() != null && BehaviorUtils.entityIsVisible(entity.getBrain(), entity.getTarget())) {
                 entity.lookAt(EntityAnchorArgument.Anchor.EYES, entity.getTarget().getPosition(1f));
                 BehaviorUtils.lookAtEntity(entity, entity.getTarget());
                 if (entity.hasLineOfSight(entity.getTarget())) {

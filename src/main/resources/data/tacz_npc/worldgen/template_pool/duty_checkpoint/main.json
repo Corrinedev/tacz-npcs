@@ -1,0 +1,15 @@
+{
+	"name": "tacz_npc:duty_checkpoint/main",
+	"fallback": "minecraft:empty",
+	"elements": [
+	{
+		"weight": 5,
+		"element": {
+			"location": "tacz_npc:duty/duty_checkpoint",
+			"processors": "minecraft:empty",
+			"projection": "rigid",
+			"element_type": "minecraft:single_pool_element"
+		}
+	}
+	]
+}

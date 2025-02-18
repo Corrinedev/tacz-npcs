@@ -1,13 +1,15 @@
 package com.corrinedev.tacznpcs.common.entity;
 
 public enum Rank {
-    ROOKIE("Rookie"),
-    EXPERIENCED("Experienced"),
-    VETERAN("Veteran"),
-    EXPERT("Expert");
+    ROOKIE("Rookie", 0),
+    EXPERIENCED("Experienced", 1),
+    VETERAN("Veteran", 2),
+    EXPERT("Expert", 3);
     public final String rankname;
-    Rank(String name) {
+    public final int id;
+    Rank(String name, int identifier) {
         rankname = name;
+        id = identifier;
     }
 
     @Override

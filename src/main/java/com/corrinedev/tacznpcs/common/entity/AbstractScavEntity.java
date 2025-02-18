@@ -21,9 +21,8 @@ import com.tacz.guns.resource.pojo.data.gun.Bolt;
 import com.tacz.guns.resource.pojo.data.gun.BulletData;
 import com.tacz.guns.resource.pojo.data.gun.GunData;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.commands.KillCommand;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.util.RandomSource;
@@ -34,6 +33,7 @@ import net.minecraft.world.entity.ai.Brain;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.behavior.Behavior;
+import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.npc.InventoryCarrier;
@@ -45,6 +45,7 @@ import net.minecraft.world.item.Equipable;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraft.world.level.pathfinder.BlockPathTypes;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.fml.ModList;
 import net.tslat.smartbrainlib.api.SmartBrainOwner;
@@ -54,11 +55,11 @@ import net.tslat.smartbrainlib.api.core.behaviour.ExtendedBehaviour;
 import net.tslat.smartbrainlib.api.core.behaviour.FirstApplicableBehaviour;
 import net.tslat.smartbrainlib.api.core.behaviour.OneRandomBehaviour;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.attack.AnimatableMeleeAttack;
-import net.tslat.smartbrainlib.api.core.behaviour.custom.attack.BowAttack;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.look.LookAtTarget;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.misc.Idle;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.misc.Panic;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.move.AvoidEntity;
+import net.tslat.smartbrainlib.api.core.behaviour.custom.move.FollowEntity;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.move.MoveToWalkTarget;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.move.StrafeTarget;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.path.SetRandomWalkTarget;
@@ -66,6 +67,7 @@ import net.tslat.smartbrainlib.api.core.behaviour.custom.path.SetWalkTargetToAtt
 import net.tslat.smartbrainlib.api.core.behaviour.custom.target.*;
 import net.tslat.smartbrainlib.api.core.sensor.ExtendedSensor;
 import org.jetbrains.annotations.NotNull;
+import org.spongepowered.asm.mixin.Unique;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.core.animation.AnimatableManager;
@@ -84,20 +86,30 @@ public abstract class AbstractScavEntity extends PathfinderMob implements GeoEnt
     public AnimationController<AbstractScavEntity> TRIGGER = new AnimationController<>(this, "reload", state -> PlayState.STOP).triggerableAnim("reload", RawAnimation.begin().thenPlayAndHold("reload_upper")).receiveTriggeredAnimations();
 
     public int rangedCooldown = 0;
+    public AbstractScavEntity patrolLeader = null;
+    public boolean isPatrolLeader = false;
+    public ItemStack patrolLeaderBanner = ItemStack.EMPTY;
     public boolean firing = true;
     public int collectiveShots = 0;
     public boolean panic = false;
     public int paniccooldown = 0;
     public boolean isReloading = false;
-    public boolean isAvoiding = false;
     public boolean deadAsContainer = false;
     public int deadAsContainerTime = 0;
     public int randomDeathNumber = RandomSource.create().nextInt(1,4);
+    public long shootTimestamp = 0L;
     public SimpleContainer inventory;
     public List<LivingEntity> attackers = new ArrayList<>();
+
+    public AbstractScavEntity generateNew() {
+        return (AbstractScavEntity) this.getType().create(this.level());
+    }
+
     protected AbstractScavEntity(EntityType<? extends PathfinderMob> p_21683_, Level p_21684_) {
         super(p_21683_, p_21684_);
-        initialGunOperateData();
+        setPathfindingMalus(BlockPathTypes.WATER, 1.0f);
+        setPathfindingMalus(BlockPathTypes.WATER_BORDER, 1.0f);
+        initialData();
         setMaxUpStep(1f);
         GeckoLibNetwork.registerSyncedAnimatable(this);
         inventory = new SimpleContainer(27);
@@ -108,9 +120,12 @@ public abstract class AbstractScavEntity extends PathfinderMob implements GeoEnt
         this.tacz$fireSelect = new LivingEntityFireSelect(this.tacz$shooter, this.tacz$data);
         this.tacz$melee = new LivingEntityMelee(this.tacz$shooter, this.tacz$data, this.tacz$draw);
         this.tacz$shoot = new LivingEntityShoot(this.tacz$shooter, this.tacz$data, this.tacz$draw);
-        this.tacz$bolt = new LivingEntityBolt(this.tacz$data, this.tacz$draw, this.tacz$shoot);
+        this.tacz$bolt = new LivingEntityBolt(this.tacz$data, this.tacz$shooter, this.tacz$draw, this.tacz$shoot);
         this.tacz$reload = new LivingEntityReload(this.tacz$shooter, this.tacz$data, this.tacz$draw, this.tacz$shoot);
         this.tacz$speed = new LivingEntitySpeedModifier(this.tacz$shooter, this.tacz$data);
+        this.tacz$sprint = new LivingEntitySprint(this.tacz$shooter, this.tacz$data);
+
+        this.inventory.addItem(patrolLeaderBanner);
     }
 
     public static AttributeSupplier.@NotNull Builder createLivingAttributes() {
@@ -168,14 +183,14 @@ public abstract class AbstractScavEntity extends PathfinderMob implements GeoEnt
 
     @Override
     public boolean isDeadOrDying() {
-        return super.isDeadOrDying();
+        return (this.getHealth() <= 0.0F) || this.deadAsContainer;
     }
 
     @Override
     public float getHealth() {
-        if(this.deadAsContainer) {
-            return 1.0f;
-        }
+        //if(this.deadAsContainer) {
+        //    return 1.0f;
+        //}
         return super.getHealth();
     }
 
@@ -239,18 +254,25 @@ public abstract class AbstractScavEntity extends PathfinderMob implements GeoEnt
                 (new AvoidEntity<>()).noCloserThan(12).avoiding((entity) -> {
             return entity == this.getTarget();
         }),
-                new TargetOrRetaliate<AbstractScavEntity>().isAllyIf((e, l) -> l.getType() == e.getType()).attackablePredicate(l -> l != null && this.hasLineOfSight(l)).alertAlliesWhen((m, e) -> e != null && m.hasLineOfSight(e)).runFor((e) -> 999),
+                new FollowEntity<AbstractScavEntity, AbstractScavEntity>().following((entity) -> entity.patrolLeader).stopFollowingWithin(8).speedMod(1.1f),
+                new TargetOrRetaliate<AbstractScavEntity>().isAllyIf((e, l) -> l.getType() == e.getType()).attackablePredicate(l -> l != null && this.hasLineOfSight(l)).alertAlliesWhen((m, e) -> e != null && m.hasLineOfSight(e)).runFor((e) -> 999).stopIf((e) -> e.getTarget() instanceof AbstractScavEntity scav && scav.deadAsContainer),
                 //new SetRetaliateTarget<>().isAllyIf((e, l) -> l.getType() == e.getType()),
                 new Panic<>().setRadius(16).speedMod((e) -> 1.1f).startCondition((e) -> this.getHealth() <= 10).whenStopping((e) -> panic = false).whenStarting( (e)-> panic = true).stopIf((e) -> this.getTarget() == null && !this.getTarget().hasLineOfSight(this)).runFor((e) -> 20),
-                (new LookAtTarget<>()).runFor((entity) -> {
+                (new LookAtTarget<AbstractScavEntity>()).runFor((entity) -> {
             return RandomSource.create().nextInt(40, 300);
-        }), new OneRandomBehaviour<>(new ExtendedBehaviour[]{
+        }).stopIf((e) -> e.getTarget() instanceof AbstractScavEntity scav && scav.deadAsContainer),
+                new OneRandomBehaviour<>(new ExtendedBehaviour[]{
                 new StrafeTarget<>().speedMod(0.75f).strafeDistance(24).stopStrafingWhen((entity) -> {
                     return this.getTarget() == null || !this.getMainHandItem().is(ModItems.MODERN_KINETIC_GUN.get());
                 }).startCondition((e) -> this.getMainHandItem().is(ModItems.MODERN_KINETIC_GUN.get())),
                 new MoveToWalkTarget<>()
-        }),
+         }),
         });
+    }
+
+    @Override
+    public boolean isAlive() {
+        return (!this.isRemoved() && this.getHealth() > 0.0F) || this.deadAsContainer;
     }
 
     @Override
@@ -365,7 +387,7 @@ public abstract class AbstractScavEntity extends PathfinderMob implements GeoEnt
                 (new SetWalkTargetToAttackTarget<>()).startCondition((entity) -> {
             return !this.getMainHandItem().is(ModItems.MODERN_KINETIC_GUN.get());}),
             new SetRetaliateTarget<>(),
-            new FirstApplicableBehaviour<>(new ExtendedBehaviour[]{(new TaczShootAttack<>(64).startCondition((x$0) -> {
+            new FirstApplicableBehaviour<>(new ExtendedBehaviour[]{(new TaczShootAttack<>(64).stopIf((e) -> e.getTarget() instanceof AbstractScavEntity scav && scav.deadAsContainer).startCondition((x$0) -> {
             return this.getMainHandItem().is(ModItems.MODERN_KINETIC_GUN.get()) && !this.panic && this.collectiveShots <= this.getStateBurst();
         })),
                     (new AnimatableMeleeAttack<>(0)).whenStarting((entity) -> {
@@ -419,7 +441,7 @@ public abstract class AbstractScavEntity extends PathfinderMob implements GeoEnt
                 case PISTOL -> 8;
                 case SNIPER -> 30;
                 case SHOTGUN -> 20;
-                case SMG, MG -> 3;
+                case SMG, MG -> 5;
                 case RPG -> 100;
                 default -> 60;
             };
@@ -429,11 +451,11 @@ public abstract class AbstractScavEntity extends PathfinderMob implements GeoEnt
     int getStateBurst() {
         if(heldGunType() != null) {
             return switch (heldGunType()) {
-                case RIFLE -> 3;
-                case PISTOL -> 4;
+                case RIFLE -> 2;
+                case PISTOL -> 3;
                 case SNIPER -> 1;
                 case SHOTGUN -> 1;
-                case SMG, MG -> 5;
+                case SMG, MG -> 4;
                 case RPG -> 1;
             };
         }
@@ -484,10 +506,22 @@ public abstract class AbstractScavEntity extends PathfinderMob implements GeoEnt
             this.discard();
         }
         super.onAddedToWorld();
+        if(this.isPatrolLeader) this.setCustomName(Component.literal(this.getCustomName().getString() + " | Patrol Leader"));
     }
 
     @Override
     public void tick() {
+        if(this.getTarget() != null && this.getTarget() instanceof AbstractScavEntity scav && scav.deadAsContainer) {
+            this.setTarget(null);
+            this.getBrain().setMemory(MemoryModuleType.ATTACK_TARGET, (LivingEntity) null);
+        }
+        if(this.getBrain().getMemory(MemoryModuleType.ATTACK_TARGET).isPresent()) {
+            if(this.getBrain().getMemory(MemoryModuleType.ATTACK_TARGET).get() instanceof AbstractScavEntity scav && scav.deadAsContainer) {
+                this.setTarget(null);
+                this.getBrain().setMemory(MemoryModuleType.ATTACK_TARGET, (LivingEntity) null);
+            }
+        }
+
         if(this.deadAsContainer) {
             tickDeath();
             //super.aiStep();
@@ -551,9 +585,12 @@ public abstract class AbstractScavEntity extends PathfinderMob implements GeoEnt
 
             }
         }
-        if (firing) {
-            if ((System.currentTimeMillis() - tacz$data.shootTimestamp) / 100 > getStateRangedCooldown()) {
+
+
+        if (firing && shootTimestamp != 0) {
+            if ((System.currentTimeMillis() - shootTimestamp) / 100 > getStateRangedCooldown()) {
                 collectiveShots = 0;
+                shootTimestamp = 0;
                 firing = false;
                 aim(false);
             }
@@ -605,9 +642,6 @@ public abstract class AbstractScavEntity extends PathfinderMob implements GeoEnt
 
         }
     }
-    public void initialGunOperateData() {
-        IGunOperator.fromLivingEntity(this).initialData();
-    }
 
     
     private final LivingEntity tacz$shooter = (LivingEntity)this;
@@ -633,66 +667,17 @@ public abstract class AbstractScavEntity extends PathfinderMob implements GeoEnt
     private final LivingEntityReload tacz$reload;
     
     private final LivingEntitySpeedModifier tacz$speed;
+
+    private final LivingEntitySprint tacz$sprint;
+
     private boolean drawn = false;
-    
-    public long getSynShootCoolDown() {
-        return (Long) ModSyncedEntityData.SHOOT_COOL_DOWN_KEY.getValue(this.tacz$shooter);
-    }
-
-    public long getSynMeleeCoolDown() {
-        return (Long)ModSyncedEntityData.MELEE_COOL_DOWN_KEY.getValue(this.tacz$shooter);
-    }
-
-    
-    public long getSynDrawCoolDown() {
-        return (Long)ModSyncedEntityData.DRAW_COOL_DOWN_KEY.getValue(this.tacz$shooter);
-    }
-
-    
-    public long getSynBoltCoolDown() {
-        return (Long)ModSyncedEntityData.BOLT_COOL_DOWN_KEY.getValue(this.tacz$shooter);
-    }
-
-    
-    public ReloadState getSynReloadState() {
-        return (ReloadState)ModSyncedEntityData.RELOAD_STATE_KEY.getValue(this.tacz$shooter);
-    }
-
-    
-    public float getSynAimingProgress() {
-        return (Float)ModSyncedEntityData.AIMING_PROGRESS_KEY.getValue(this.tacz$shooter);
-    }
-
-    
-    public float getSynSprintTime() {
-        return (Float)ModSyncedEntityData.SPRINT_TIME_KEY.getValue(this.tacz$shooter);
-    }
-
-    
-    public boolean getSynIsAiming() {
-        return (Boolean)ModSyncedEntityData.IS_AIMING_KEY.getValue(this.tacz$shooter);
-    }
-
-    
-    public void initialData() {
-        this.tacz$data.initialData();
-        AttachmentPropertyManager.postChangeEvent(this.tacz$shooter, this.tacz$shooter.getMainHandItem());
-    }
-
     
     public void draw(Supplier<ItemStack> gunItemSupplier) {
         this.tacz$draw.draw(gunItemSupplier);
         this.drawn = true;
     }
-
-    
-    public void bolt() {
-        this.tacz$bolt.bolt();
-    }
-
     
     public void reload() {
-        //System.out.println(TRIGGER.tryTriggerAnimation("reload"));
         //this.triggerAnim("reload", "reload");
         if (this.level() instanceof ServerLevel)
             this.triggerAnim("reload", "reload");
@@ -700,27 +685,6 @@ public abstract class AbstractScavEntity extends PathfinderMob implements GeoEnt
         this.isReloading = true;
     }
 
-    public void melee() {
-        this.tacz$melee.melee();
-    }
-
-    
-    public ShootResult shoot(Supplier<Float> pitch, Supplier<Float> yaw) {
-        this.triggerAnim("fire_controller", "fire");
-        return this.tacz$shoot.shoot(pitch, yaw);
-    }
-
-    
-    public boolean needCheckAmmo() {
-        return false;
-    }
-
-    
-    public boolean consumesAmmoOrNot() {
-        return this.tacz$ammoCheck.consumesAmmoOrNot();
-    }
-
-    
     public void aim(boolean isAim) {
         this.tacz$aim.aim(isAim);
     }
@@ -746,6 +710,90 @@ public abstract class AbstractScavEntity extends PathfinderMob implements GeoEnt
     
     public void zoom() {
         this.tacz$aim.zoom();
+    }
+
+    public long getSynShootCoolDown() {
+        return (Long)ModSyncedEntityData.SHOOT_COOL_DOWN_KEY.getValue(this.tacz$shooter);
+    }
+
+    public long getSynMeleeCoolDown() {
+        return (Long)ModSyncedEntityData.MELEE_COOL_DOWN_KEY.getValue(this.tacz$shooter);
+    }
+
+    public long getSynDrawCoolDown() {
+        return (Long)ModSyncedEntityData.DRAW_COOL_DOWN_KEY.getValue(this.tacz$shooter);
+    }
+
+    public boolean getSynIsBolting() {
+        return (Boolean)ModSyncedEntityData.IS_BOLTING_KEY.getValue(this.tacz$shooter);
+    }
+
+    public ReloadState getSynReloadState() {
+        return (ReloadState)ModSyncedEntityData.RELOAD_STATE_KEY.getValue(this.tacz$shooter);
+    }
+
+    public float getSynAimingProgress() {
+        return (Float)ModSyncedEntityData.AIMING_PROGRESS_KEY.getValue(this.tacz$shooter);
+    }
+
+    public float getSynSprintTime() {
+        return (Float)ModSyncedEntityData.SPRINT_TIME_KEY.getValue(this.tacz$shooter);
+    }
+
+    public boolean getSynIsAiming() {
+        return (Boolean)ModSyncedEntityData.IS_AIMING_KEY.getValue(this.tacz$shooter);
+    }
+
+    public void initialData() {
+        this.tacz$data.initialData();
+        AttachmentPropertyManager.postChangeEvent(this.tacz$shooter, this.tacz$shooter.getMainHandItem());
+    }
+
+    public void bolt() {
+        this.tacz$bolt.bolt();
+    }
+
+    public void cancelReload() {
+        this.tacz$reload.cancelReload();
+    }
+
+    public void melee() {
+        this.tacz$melee.melee();
+    }
+
+    public ShootResult shoot(Supplier<Float> pitch, Supplier<Float> yaw) {
+        return this.shoot(pitch, yaw, System.currentTimeMillis() - this.tacz$data.baseTimestamp);
+    }
+
+    public ShootResult shoot(Supplier<Float> pitch, Supplier<Float> yaw, long timestamp) {
+        this.shootTimestamp = System.currentTimeMillis();
+        return this.tacz$shoot.shoot(pitch, yaw, timestamp);
+    }
+
+    public boolean needCheckAmmo() {
+        return false;
+    }
+
+    public boolean consumesAmmoOrNot() {
+        return this.tacz$ammoCheck.consumesAmmoOrNot();
+    }
+
+    @Unique
+    public boolean getProcessedSprintStatus(boolean sprint) {
+        return this.tacz$sprint.getProcessedSprintStatus(sprint);
+    }
+
+    public ShooterDataHolder getDataHolder() {
+        return this.tacz$data;
+    }
+
+    public boolean nextBulletIsTracer(int tracerCountInterval) {
+        ++this.tacz$data.shootCount;
+        if (tracerCountInterval == -1) {
+            return false;
+        } else {
+            return this.tacz$data.shootCount % (tracerCountInterval + 1) == 0;
+        }
     }
     private void onTickServerSide() {
         if (!this.level().isClientSide()) {
@@ -778,10 +826,11 @@ public abstract class AbstractScavEntity extends PathfinderMob implements GeoEnt
             this.tacz$bolt.tickBolt();
             this.tacz$melee.scheduleTickMelee();
             this.tacz$speed.updateSpeedModifier();
+            this.tacz$shooter.setSprinting(this.getProcessedSprintStatus(this.tacz$shooter.isSprinting()));
             ModSyncedEntityData.SHOOT_COOL_DOWN_KEY.setValue(this.tacz$shooter, this.tacz$shoot.getShootCoolDown());
             ModSyncedEntityData.MELEE_COOL_DOWN_KEY.setValue(this.tacz$shooter, this.tacz$melee.getMeleeCoolDown());
             ModSyncedEntityData.DRAW_COOL_DOWN_KEY.setValue(this.tacz$shooter, this.tacz$draw.getDrawCoolDown());
-            ModSyncedEntityData.BOLT_COOL_DOWN_KEY.setValue(this.tacz$shooter, this.tacz$data.boltCoolDown);
+            ModSyncedEntityData.IS_BOLTING_KEY.setValue(this.tacz$shooter, this.tacz$data.isBolting);
             ModSyncedEntityData.RELOAD_STATE_KEY.setValue(this.tacz$shooter, reloadState);
             ModSyncedEntityData.AIMING_PROGRESS_KEY.setValue(this.tacz$shooter, this.tacz$data.aimingProgress);
             ModSyncedEntityData.IS_AIMING_KEY.setValue(this.tacz$shooter, this.tacz$data.isAiming);

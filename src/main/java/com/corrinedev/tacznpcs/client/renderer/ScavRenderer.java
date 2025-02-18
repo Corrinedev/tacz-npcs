@@ -30,6 +30,7 @@ import software.bernie.geckolib.renderer.layer.ItemArmorGeoLayer;
 import software.bernie.geckolib.util.RenderUtils;
 
 public class ScavRenderer<T extends AbstractScavEntity> extends GeoEntityRenderer<T> {
+    public BlockAndItemGeoLayer<T> BANNERLAYER;
     public float rotation = 0f;
     public ItemArmorGeoLayer<T> LAYER;
     public BlockAndItemGeoLayer<T> ITEMLAYER;
@@ -54,6 +55,29 @@ public class ScavRenderer<T extends AbstractScavEntity> extends GeoEntityRendere
             protected void renderStackForBone(PoseStack poseStack, GeoBone bone, ItemStack stack, T animatable, MultiBufferSource bufferSource, float partialTick, int packedLight, int packedOverlay) {
                 // Rotate the item by 90 degrees on the X-axis
                 poseStack.mulPose(Axis.XP.rotationDegrees(-90f));
+                // Render the item with the provided parameters
+                super.renderStackForBone(poseStack, bone, stack, animatable, bufferSource, partialTick, packedLight, packedOverlay);
+            }
+        };
+        BANNERLAYER = new BlockAndItemGeoLayer<T>(this) {
+            @Nullable
+            @Override
+            protected ItemStack getStackForBone(GeoBone bone, T animatable) {
+                return switch (bone.getName()) {
+                    case "helmet" -> animatable.patrolLeaderBanner;
+                    default -> null;
+                };
+            }
+            @Override
+            protected ItemDisplayContext getTransformTypeForStack(GeoBone bone, ItemStack stack, T animatable) {
+                return switch (bone.getName()) {
+                    default -> ItemDisplayContext.HEAD;
+                };
+            }
+            @Override
+            protected void renderStackForBone(PoseStack poseStack, GeoBone bone, ItemStack stack, T animatable, MultiBufferSource bufferSource, float partialTick, int packedLight, int packedOverlay) {
+                // Rotate the item by 90 degrees on the X-axis
+                //poseStack.mulPose(Axis.XP.rotationDegrees(-90f));
                 // Render the item with the provided parameters
                 super.renderStackForBone(poseStack, bone, stack, animatable, bufferSource, partialTick, packedLight, packedOverlay);
             }
@@ -99,6 +123,7 @@ public class ScavRenderer<T extends AbstractScavEntity> extends GeoEntityRendere
 
         addRenderLayer(LAYER);
         addRenderLayer(ITEMLAYER);
+        addRenderLayer(BANNERLAYER);
     }
     /// EVIL DEPRECIATED WITCHCRAFT DONT USE
     //public int getPackedOverlay(T animatable, float u) {

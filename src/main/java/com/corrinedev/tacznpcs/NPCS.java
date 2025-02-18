@@ -37,11 +37,11 @@ public class NPCS {
         modEventBus.addListener(AttributeRegistry::register);
 
         MinecraftForge.EVENT_BUS.register(this);
-
+        modEventBus.addListener(this::addCreative);
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);
         ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, ClientConfig.SPEC);
     }
-    @SubscribeEvent
+
     private void addCreative(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey() == CreativeModeTabs.SPAWN_EGGS) event.accept(ItemRegistry.BANDITSPAWN.get());
         if (event.getTabKey() == CreativeModeTabs.SPAWN_EGGS) event.accept(ItemRegistry.DUTYSPAWN.get());

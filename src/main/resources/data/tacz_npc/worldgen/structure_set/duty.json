@@ -1,0 +1,15 @@
+{
+    "placement": {
+      "type": "minecraft:random_spread",
+      "salt": 389564243,
+      "separation": 12,
+
+      "spacing": 16
+    },
+    "structures": [
+	  {
+        "structure": "tacz_npc:duty_checkpoint",
+        "weight": 1
+      }
+    ]
+  }
