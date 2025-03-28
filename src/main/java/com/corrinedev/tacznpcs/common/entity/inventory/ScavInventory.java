@@ -17,10 +17,4 @@ public class ScavInventory extends ChestMenu {
     public static ScavInventory generate(int pContainerId, Inventory pPlayerInventory, Container pContainer, AbstractScavEntity entity) {
         return new ScavInventory(MenuType.GENERIC_9x3, pContainerId, pPlayerInventory, pContainer, 3, entity);
     }
-
-
-    @Override
-    public void broadcastChanges() {
-        super.broadcastChanges();
-    }
 }

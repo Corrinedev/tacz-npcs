@@ -3,6 +3,7 @@ package com.corrinedev.tacznpcs.common.entity.behavior;
 import com.corrinedev.tacznpcs.common.entity.AbstractScavEntity;
 import com.mojang.datafixers.util.Pair;
 import com.tacz.guns.api.entity.ShootResult;
+import com.tacz.guns.item.ModernKineticGunItem;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.server.level.ServerLevel;
@@ -47,16 +48,18 @@ public class TaczShootAttack<E extends AbstractScavEntity> extends ExtendedBehav
                 entity.lookAt(EntityAnchorArgument.Anchor.EYES, entity.getTarget().getPosition(1f));
                 BehaviorUtils.lookAtEntity(entity, entity.getTarget());
                 if (entity.hasLineOfSight(entity.getTarget())) {
-                    entity.aim(true);
-                    ShootResult result = entity.shoot(() -> (float) entity.getViewXRot(1f), () -> (float) entity.getViewYRot(1f));
-                    if (result == ShootResult.SUCCESS) {
-                        entity.firing = true;
-                        entity.collectiveShots++;
-                        entity.rangedCooldown = entity.getStateRangedCooldown();
-                    } else if (result == ShootResult.NEED_BOLT) {
-                        entity.bolt();
+                    if (entity.getMainHandItem().getItem() instanceof ModernKineticGunItem) {
+                        entity.aim(true);
+                        ShootResult result = entity.shoot(() -> (float) entity.getViewXRot(1f), () -> (float) entity.getViewYRot(1f));
+                        if (result == ShootResult.SUCCESS) {
+                            entity.firing = true;
+                            entity.collectiveShots++;
+                            entity.rangedCooldown = entity.getStateRangedCooldown();
+                        } else if (result == ShootResult.NEED_BOLT) {
+                            entity.bolt();
+                        }
+                        //BrainUtils.setForgettableMemory(entity, MemoryModuleType.ATTACK_COOLING_DOWN, true, (Integer) 1);
                     }
-                    //BrainUtils.setForgettableMemory(entity, MemoryModuleType.ATTACK_COOLING_DOWN, true, (Integer) 1);
                 }
             }
         }

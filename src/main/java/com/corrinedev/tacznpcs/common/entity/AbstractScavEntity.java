@@ -3,6 +3,7 @@ package com.corrinedev.tacznpcs.common.entity;
 import com.corrinedev.tacznpcs.Config;
 import com.corrinedev.tacznpcs.common.entity.behavior.TaczShootAttack;
 import com.corrinedev.tacznpcs.common.entity.inventory.ScavInventory;
+import com.mojang.authlib.GameProfile;
 import com.tacz.guns.api.TimelessAPI;
 import com.tacz.guns.api.entity.IGunOperator;
 import com.tacz.guns.api.entity.ReloadState;
@@ -24,6 +25,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.*;
@@ -388,7 +390,7 @@ public abstract class AbstractScavEntity extends PathfinderMob implements GeoEnt
             return !this.getMainHandItem().is(ModItems.MODERN_KINETIC_GUN.get());}),
             new SetRetaliateTarget<>(),
             new FirstApplicableBehaviour<>(new ExtendedBehaviour[]{(new TaczShootAttack<>(64).stopIf((e) -> e.getTarget() instanceof AbstractScavEntity scav && scav.deadAsContainer).startCondition((x$0) -> {
-            return this.getMainHandItem().is(ModItems.MODERN_KINETIC_GUN.get()) && !this.panic && this.collectiveShots <= this.getStateBurst();
+            return (this.getMainHandItem().is(ModItems.MODERN_KINETIC_GUN.get())) && !this.panic && this.collectiveShots <= this.getStateBurst();
         })),
                     (new AnimatableMeleeAttack<>(0)).whenStarting((entity) -> {
             this.setAggressive(true);
