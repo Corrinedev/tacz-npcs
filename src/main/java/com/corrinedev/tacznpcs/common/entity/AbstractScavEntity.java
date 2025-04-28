@@ -3,7 +3,6 @@ package com.corrinedev.tacznpcs.common.entity;
 import com.corrinedev.tacznpcs.Config;
 import com.corrinedev.tacznpcs.common.entity.behavior.TaczShootAttack;
 import com.corrinedev.tacznpcs.common.entity.inventory.ScavInventory;
-import com.mojang.authlib.GameProfile;
 import com.tacz.guns.api.TimelessAPI;
 import com.tacz.guns.api.entity.IGunOperator;
 import com.tacz.guns.api.entity.ReloadState;
@@ -21,11 +20,11 @@ import com.tacz.guns.resource.modifier.AttachmentPropertyManager;
 import com.tacz.guns.resource.pojo.data.gun.Bolt;
 import com.tacz.guns.resource.pojo.data.gun.BulletData;
 import com.tacz.guns.resource.pojo.data.gun.GunData;
+import dev.kosmx.playerAnim.api.IPlayer;
+import me.Thelnfamous1.mobplayeranimator.api.PlayerAnimatorHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.*;
@@ -70,23 +69,12 @@ import net.tslat.smartbrainlib.api.core.behaviour.custom.target.*;
 import net.tslat.smartbrainlib.api.core.sensor.ExtendedSensor;
 import org.jetbrains.annotations.NotNull;
 import org.spongepowered.asm.mixin.Unique;
-import software.bernie.geckolib.animatable.GeoEntity;
-import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.core.animation.AnimatableManager;
-import software.bernie.geckolib.core.animation.AnimationController;
-import software.bernie.geckolib.core.animation.RawAnimation;
-import software.bernie.geckolib.core.object.PlayState;
-import software.bernie.geckolib.network.GeckoLibNetwork;
-import software.bernie.geckolib.util.GeckoLibUtil;
 
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Supplier;
 
-public abstract class AbstractScavEntity extends PathfinderMob implements GeoEntity, SmartBrainOwner<AbstractScavEntity>, IGunOperator, InventoryCarrier, HasCustomInventoryScreen, MenuProvider {
-    private final AnimatableInstanceCache cache =  GeckoLibUtil.createInstanceCache(this);
-    public AnimationController<AbstractScavEntity> TRIGGER = new AnimationController<>(this, "reload", state -> PlayState.STOP).triggerableAnim("reload", RawAnimation.begin().thenPlayAndHold("reload_upper")).receiveTriggeredAnimations();
-
+public abstract class AbstractScavEntity extends PathfinderMob implements SmartBrainOwner<AbstractScavEntity>, IGunOperator, InventoryCarrier, HasCustomInventoryScreen, MenuProvider {
     public int rangedCooldown = 0;
     public AbstractScavEntity patrolLeader = null;
     public boolean isPatrolLeader = false;
@@ -113,7 +101,6 @@ public abstract class AbstractScavEntity extends PathfinderMob implements GeoEnt
         setPathfindingMalus(BlockPathTypes.WATER_BORDER, 1.0f);
         initialData();
         setMaxUpStep(1f);
-        GeckoLibNetwork.registerSyncedAnimatable(this);
         inventory = new SimpleContainer(27);
         this.tacz$draw = new LivingEntityDrawGun(this.tacz$shooter, this.tacz$data);
         this.tacz$aim = new LivingEntityAim(this.tacz$shooter, this.tacz$data);
@@ -128,6 +115,7 @@ public abstract class AbstractScavEntity extends PathfinderMob implements GeoEnt
         this.tacz$sprint = new LivingEntitySprint(this.tacz$shooter, this.tacz$data);
 
         this.inventory.addItem(patrolLeaderBanner);
+
     }
 
     public static AttributeSupplier.@NotNull Builder createLivingAttributes() {
@@ -210,46 +198,6 @@ public abstract class AbstractScavEntity extends PathfinderMob implements GeoEnt
     }
 
     public abstract boolean allowInventory(Player player);
-    @Override
-    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(TRIGGER)
-                .add(new AnimationController<>(this, "controller", 5, event ->
-            {
-                return event.setAndContinue(
-                        // If sprinting, play the run animation
-                                event.getAnimatable().isDeadOrDying() || event.getAnimatable().deadAsContainer ? RawAnimation.begin().thenPlayAndHold("death" + randomDeathNumber) :
-                                        event.getAnimatable().isSprinting() ? RawAnimation.begin().thenLoop("run") :
-                                // If moving, play the walk animation
-                                event.isMoving() ? RawAnimation.begin().thenLoop("walk"):
-                                        tacz$data.isAiming ? RawAnimation.begin().thenLoop("aim_upper") :
-
-                                                // If not moving, play the idle animation
-                                  RawAnimation.begin().thenLoop("idle"));
-            })
-                    // Sets a Sound KeyFrame
-                    .setSoundKeyframeHandler(event -> {
-                        //Plays the step sound on the walk keyframes in an animation
-                        if (event.getKeyframeData().getSound().matches("walk")) {
-                            if(level().isClientSide) {
-                                playStepSound(this.blockPosition(), this.getFeetBlockState());
-                            }
-                        }
-                    }));
-            controllers.add(new AnimationController<>(this, "layered", 5, event -> {
-                if(this.isReloading && !deadAsContainer) {
-                    return event.setAndContinue(RawAnimation.begin().thenPlayAndHold("reload_upper"));
-                }
-                if(deadAsContainer) {
-                    event.resetCurrentAnimation();
-                }
-                return event.setAndContinue(RawAnimation.begin().thenWait(0));
-            }));
-    }
-
-    @Override
-    public AnimatableInstanceCache getAnimatableInstanceCache() {
-        return cache;
-    }
 
     public BrainActivityGroup<? extends AbstractScavEntity> getCoreTasks() {
         return BrainActivityGroup.coreTasks(new Behavior[]{
@@ -390,7 +338,7 @@ public abstract class AbstractScavEntity extends PathfinderMob implements GeoEnt
             return !this.getMainHandItem().is(ModItems.MODERN_KINETIC_GUN.get());}),
             new SetRetaliateTarget<>(),
             new FirstApplicableBehaviour<>(new ExtendedBehaviour[]{(new TaczShootAttack<>(64).stopIf((e) -> e.getTarget() instanceof AbstractScavEntity scav && scav.deadAsContainer).startCondition((x$0) -> {
-            return (this.getMainHandItem().is(ModItems.MODERN_KINETIC_GUN.get())) && !this.panic && this.collectiveShots <= this.getStateBurst();
+            return this.getMainHandItem().is(ModItems.MODERN_KINETIC_GUN.get()) && !this.panic && this.collectiveShots <= this.getStateBurst();
         })),
                     (new AnimatableMeleeAttack<>(0)).whenStarting((entity) -> {
             this.setAggressive(true);
@@ -680,9 +628,6 @@ public abstract class AbstractScavEntity extends PathfinderMob implements GeoEnt
     }
     
     public void reload() {
-        //this.triggerAnim("reload", "reload");
-        if (this.level() instanceof ServerLevel)
-            this.triggerAnim("reload", "reload");
         this.tacz$reload.reload();
         this.isReloading = true;
     }

@@ -159,11 +159,12 @@ dependencies {
     implementation fg.deobf("curse.maven:smartbrainlib-661293:5654964")
     implementation fg.deobf("curse.maven:geckolib-388172:5675230")
     implementation fg.deobf("curse.maven:timeless-and-classics-zero-1028108:6058563")
-    implementation fg.deobf("curse.maven:vics-point-blank-961053:6012485")
     implementation fg.deobf("curse.maven:oculus-581495:6020952")
     implementation fg.deobf("curse.maven:embeddium-908741:5681725")
-    implementation fg.deobf("curse.maven:marbleds-arsenal-776273:5771779")
-    implementation fg.deobf("curse.maven:marbleds-core-1039434:6058648")
+    implementation fg.deobf("curse.maven:playeranimator-658587:4587214")
+    implementation fg.deobf("curse.maven:mob-player-animator-1058791:6125584")
+    implementation fg.deobf("curse.maven:cloth-config-348521:5729105")
+
     // Example mod dependency with JEI - using fg.deobf() ensures the dependency is remapped to your development mappings
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
     // compileOnly fg.deobf("mezz.jei:jei-${mc_version}-common-api:${jei_version}")

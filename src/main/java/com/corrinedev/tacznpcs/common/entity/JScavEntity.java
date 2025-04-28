@@ -8,8 +8,8 @@ import net.tslat.smartbrainlib.api.core.sensor.ExtendedSensor;
 
 import java.util.List;
 
-public class JsonScavEntity extends AbstractScavEntity{
-    protected JsonScavEntity(EntityType<? extends PathfinderMob> p_21683_, Level p_21684_) {
+public class JScavEntity extends AbstractScavEntity {
+    public JScavEntity(EntityType<? extends PathfinderMob> p_21683_, Level p_21684_) {
         super(p_21683_, p_21684_);
     }
 

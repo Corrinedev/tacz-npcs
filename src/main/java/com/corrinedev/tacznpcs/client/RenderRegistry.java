@@ -1,7 +1,7 @@
 package com.corrinedev.tacznpcs.client;
 
-import com.corrinedev.tacznpcs.client.renderer.BanditRenderer;
-import com.corrinedev.tacznpcs.client.renderer.DutyRenderer;
+import com.corrinedev.tacznpcs.client.renderer.HumanoidScavModel;
+import com.corrinedev.tacznpcs.client.renderer.HumanoidScavRenderer;
 import com.corrinedev.tacznpcs.common.registry.EntityTypeRegistry;
 import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraftforge.api.distmarker.Dist;
@@ -15,7 +15,7 @@ import static com.corrinedev.tacznpcs.NPCS.MODID;
 public class RenderRegistry {
     @SubscribeEvent
     public static void register(FMLClientSetupEvent event) {
-        EntityRenderers.register(EntityTypeRegistry.BANDIT.get(), BanditRenderer::new);
-        EntityRenderers.register(EntityTypeRegistry.DUTY.get(), DutyRenderer::new);
+        EntityRenderers.register(EntityTypeRegistry.BANDIT.get(), (ctx) -> new HumanoidScavRenderer(ctx, new HumanoidScavModel(true)));
+        EntityRenderers.register(EntityTypeRegistry.DUTY.get(),  (ctx) -> new HumanoidScavRenderer(ctx, new HumanoidScavModel(true)));
     }
 }
