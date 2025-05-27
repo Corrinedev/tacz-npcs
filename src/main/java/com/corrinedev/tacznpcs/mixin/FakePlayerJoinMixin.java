@@ -15,16 +15,27 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import javax.annotation.Nullable;
+
 @Mixin(PlayerList.class)
 public class FakePlayerJoinMixin {
+    @Nullable
     public ServerPlayer player;
+
     @Inject(method = "broadcastSystemMessage(Lnet/minecraft/network/chat/Component;Z)V", at = @At("HEAD"), cancellable = true)
     public void cancelJoinMessage(Component pMessage, boolean pBypassHiddenChat, CallbackInfo ci) {
-        if(player instanceof ScavPlayer)
+        if(player != null && player instanceof ScavPlayer) {
             ci.cancel();
+        }
     }
+
     @Inject(method = "placeNewPlayer", at = @At("HEAD"))
     public void storePlayer(Connection pNetManager, ServerPlayer pPlayer, CallbackInfo ci) {
         this.player = pPlayer;
+    }
+
+    @Inject(method = "placeNewPlayer", at = @At("TAIL"))
+    public void unstorePlayer(Connection pNetManager, ServerPlayer pPlayer, CallbackInfo ci) {
+        this.player = null;
     }
 }

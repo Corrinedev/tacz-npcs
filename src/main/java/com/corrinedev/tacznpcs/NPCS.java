@@ -1,8 +1,5 @@
 package com.corrinedev.tacznpcs;
 
-import com.corrinedev.serialize.SerializedRegister;
-import com.corrinedev.serialize.resources.SerializedEntity;
-import com.corrinedev.tacznpcs.common.entity.JScavEntity;
 import com.corrinedev.tacznpcs.common.registry.AttributeRegistry;
 import com.corrinedev.tacznpcs.common.registry.EntityTypeRegistry;
 import com.corrinedev.tacznpcs.common.registry.ItemRegistry;
@@ -13,7 +10,6 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModLoadingContext;
@@ -23,7 +19,6 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegisterEvent;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -35,13 +30,9 @@ public class NPCS {
     public static final String MODID = "tacz_npc";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public static SerializedRegister<EntityType<JScavEntity>> register = new SerializedRegister<>(ForgeRegistries.Keys.ENTITY_TYPES);
-
     public NPCS() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         modEventBus.addListener(this::commonSetup);
-        List<SerializedEntity> SCAVLOADER = new ArrayList<>();
-        register = new SerializedRegister<>(ForgeRegistries.Keys.ENTITY_TYPES);
         EntityTypeRegistry.TYPES.register(modEventBus);
 
         ItemRegistry.ITEMS.register(modEventBus);

@@ -2,6 +2,7 @@ package com.corrinedev.tacznpcs.client;
 
 import com.corrinedev.tacznpcs.client.renderer.HumanoidScavModel;
 import com.corrinedev.tacznpcs.client.renderer.HumanoidScavRenderer;
+import com.corrinedev.tacznpcs.client.renderer.PathfinderEmptyRenderer;
 import com.corrinedev.tacznpcs.common.registry.EntityTypeRegistry;
 import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraftforge.api.distmarker.Dist;
@@ -17,5 +18,6 @@ public class RenderRegistry {
     public static void register(FMLClientSetupEvent event) {
         EntityRenderers.register(EntityTypeRegistry.BANDIT.get(), (ctx) -> new HumanoidScavRenderer(ctx, new HumanoidScavModel(true)));
         EntityRenderers.register(EntityTypeRegistry.DUTY.get(),  (ctx) -> new HumanoidScavRenderer(ctx, new HumanoidScavModel(true)));
+        EntityRenderers.register(EntityTypeRegistry.PATHFINDER.get(), PathfinderEmptyRenderer::new);
     }
 }

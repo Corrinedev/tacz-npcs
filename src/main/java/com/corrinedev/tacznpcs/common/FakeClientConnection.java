@@ -28,5 +28,6 @@ public class FakeClientConnection extends Connection
     @Override
     public void setListener(PacketListener packetListener)
     {
+
     }
 }

@@ -1,5 +1,6 @@
 package com.corrinedev.tacznpcs.common.entity.behavior;
 
+import com.corrinedev.tacznpcs.common.ScavPlayer;
 import com.corrinedev.tacznpcs.common.entity.AbstractScavEntity;
 import com.mojang.datafixers.util.Pair;
 import com.tacz.guns.api.entity.ShootResult;
@@ -8,6 +9,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.behavior.BehaviorUtils;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.memory.MemoryStatus;
@@ -17,7 +19,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class TaczShootAttack<E extends AbstractScavEntity> extends ExtendedBehaviour<E> {
+public class TaczShootAttack<E extends ScavPlayer.InternalPathfinder> extends ExtendedBehaviour<E> {
     private static final List<Pair<MemoryModuleType<?>, MemoryStatus>> MEMORY_REQUIREMENTS;
     protected float attackRadius;
     protected @Nullable LivingEntity target = null;
@@ -49,16 +51,16 @@ public class TaczShootAttack<E extends AbstractScavEntity> extends ExtendedBehav
                 BehaviorUtils.lookAtEntity(entity, entity.getTarget());
                 if (entity.hasLineOfSight(entity.getTarget())) {
                     if (entity.getMainHandItem().getItem() instanceof ModernKineticGunItem) {
-                        entity.aim(true);
-                        ShootResult result = entity.shoot(() -> (float) entity.getViewXRot(1f), () -> (float) entity.getViewYRot(1f));
+                        var user = entity.user;
+                        user.aim(true);
+                        ShootResult result = user.shoot(() -> entity.getViewXRot(1f), () -> entity.getViewYRot(1f));
                         if (result == ShootResult.SUCCESS) {
                             entity.firing = true;
                             entity.collectiveShots++;
-                            entity.rangedCooldown = entity.getStateRangedCooldown();
                         } else if (result == ShootResult.NEED_BOLT) {
-                            entity.bolt();
+                            user.bolt();
                         }
-                        //BrainUtils.setForgettableMemory(entity, MemoryModuleType.ATTACK_COOLING_DOWN, true, (Integer) 1);
+                        BrainUtils.setForgettableMemory(entity, MemoryModuleType.ATTACK_COOLING_DOWN, true, (Integer) 1);
                     }
                 }
             }
