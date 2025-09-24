@@ -427,7 +427,6 @@ public class ScavPlayer extends ServerPlayer {
             super(TYPE, pLevel);
             attachedEntity = pEntity;
             user = IGunOperator.fromLivingEntity(pEntity);
-            System.out.println("Creating pathfinder for " + pEntity.getName().getString());
         }
 
         @Override
@@ -515,7 +514,7 @@ public class ScavPlayer extends ServerPlayer {
                     (new SetWalkTargetToAttackTarget<>()).startCondition((entity) -> {
                         return !attachedEntity.getMainHandItem().is(ModItems.MODERN_KINETIC_GUN.get());}),
                     new SetRetaliateTarget<>(),
-                    new FirstApplicableBehaviour<>((new TaczShootAttack<>(64).stopIf((e) -> e.getTarget() instanceof AbstractScavEntity scav && scav.deadAsContainer).startCondition((x$0) -> {
+                    new FirstApplicableBehaviour((new TaczShootAttack<>(64).stopIf((e) -> e.getTarget() instanceof AbstractScavEntity scav && scav.deadAsContainer).startCondition((x$0) -> {
                         return attachedEntity.getMainHandItem().is(ModItems.MODERN_KINETIC_GUN.get()) && !this.panic && this.collectiveShots <= 5;
                     })),
                             (new AnimatableMeleeAttack<InternalPathfinder>(0)).whenStarting((entity) -> {

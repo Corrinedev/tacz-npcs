@@ -75,6 +75,7 @@ import java.util.function.Supplier;
 public abstract class AbstractScavEntity extends PathfinderMob implements SmartBrainOwner<AbstractScavEntity>, IGunOperator, InventoryCarrier, HasCustomInventoryScreen, MenuProvider {
     public int rangedCooldown = 0;
     public AbstractScavEntity patrolLeader = null;
+    public List<AbstractScavEntity> team = new ArrayList<>();
     public boolean isPatrolLeader = false;
     public ItemStack patrolLeaderBanner = ItemStack.EMPTY;
     public boolean firing = true;
@@ -117,7 +118,12 @@ public abstract class AbstractScavEntity extends PathfinderMob implements SmartB
     }
 
     public static AttributeSupplier.@NotNull Builder createLivingAttributes() {
-        return Monster.createMonsterAttributes().add(Attributes.FOLLOW_RANGE, 64.0D).add(Attributes.MOVEMENT_SPEED, 0.35F).add(Attributes.ATTACK_DAMAGE, 3.0D).add(Attributes.ARMOR, 2.0D);
+        return Monster.createMonsterAttributes()
+                .add(Attributes.FOLLOW_RANGE, 64.0D)
+                .add(Attributes.MOVEMENT_SPEED, 0.25F)
+                .add(Attributes.ATTACK_DAMAGE, 3.0D)
+                .add(Attributes.KNOCKBACK_RESISTANCE, 0.25D)
+                .add(Attributes.ARMOR, 2.0D);
     }
 
     @Override
@@ -167,6 +173,10 @@ public abstract class AbstractScavEntity extends PathfinderMob implements SmartB
         for(EquipmentSlot slot : EquipmentSlot.values()) {
             this.setItemSlot(slot, ItemStack.EMPTY);
         }
+    }
+
+    public boolean isSlim() {
+        return true;
     }
 
     @Override
@@ -782,5 +792,4 @@ public abstract class AbstractScavEntity extends PathfinderMob implements SmartB
             ModSyncedEntityData.SPRINT_TIME_KEY.setValue(this.tacz$shooter, this.tacz$data.sprintTimeS);
         }
     }
-
 }

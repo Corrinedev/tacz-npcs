@@ -2,6 +2,7 @@ package com.corrinedev.tacznpcs.common.entity.behavior;
 
 import com.corrinedev.tacznpcs.common.ScavPlayer;
 import com.corrinedev.tacznpcs.common.entity.AbstractScavEntity;
+import com.corrinedev.tacznpcs.common.entity.BanditEntity;
 import com.mojang.datafixers.util.Pair;
 import com.tacz.guns.api.entity.ShootResult;
 import com.tacz.guns.item.ModernKineticGunItem;
@@ -19,7 +20,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class TaczShootAttack<E extends ScavPlayer.InternalPathfinder> extends ExtendedBehaviour<E> {
+public class TaczShootAttack<E extends AbstractScavEntity> extends ExtendedBehaviour<E> {
     private static final List<Pair<MemoryModuleType<?>, MemoryStatus>> MEMORY_REQUIREMENTS;
     protected float attackRadius;
     protected @Nullable LivingEntity target = null;
@@ -51,16 +52,15 @@ public class TaczShootAttack<E extends ScavPlayer.InternalPathfinder> extends Ex
                 BehaviorUtils.lookAtEntity(entity, entity.getTarget());
                 if (entity.hasLineOfSight(entity.getTarget())) {
                     if (entity.getMainHandItem().getItem() instanceof ModernKineticGunItem) {
-                        var user = entity.user;
-                        user.aim(true);
-                        ShootResult result = user.shoot(() -> entity.getViewXRot(1f), () -> entity.getViewYRot(1f));
+                        entity.aim(true);
+                        ShootResult result = entity.shoot(() -> entity.getViewXRot(1f), () -> entity.getViewYRot(1f));
                         if (result == ShootResult.SUCCESS) {
                             entity.firing = true;
                             entity.collectiveShots++;
                         } else if (result == ShootResult.NEED_BOLT) {
-                            user.bolt();
+                            entity.bolt();
                         }
-                        BrainUtils.setForgettableMemory(entity, MemoryModuleType.ATTACK_COOLING_DOWN, true, (Integer) 1);
+                        BrainUtils.setForgettableMemory(entity, MemoryModuleType.ATTACK_COOLING_DOWN, true, 1);
                     }
                 }
             }

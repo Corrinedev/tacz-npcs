@@ -93,6 +93,11 @@ public class DutyEntity extends AbstractScavEntity {
     }
 
     @Override
+    public boolean isSlim() {
+        return false;
+    }
+
+    @Override
     public boolean allowInventory(Player player) {
         if(this.deadAsContainer) {
             return true;

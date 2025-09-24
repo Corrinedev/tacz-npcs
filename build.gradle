@@ -154,7 +154,7 @@ dependencies {
     // then special handling is done to allow a setup of a vanilla dependency without the use of an external repository.
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     implementation fg.deobf("curse.maven:smartbrainlib-661293:5654964")
-    implementation fg.deobf("curse.maven:timeless-and-classics-zero-1028108:6058563")
+    implementation fg.deobf("curse.maven:timeless-and-classics-zero-1028108:6654541")
     implementation fg.deobf("curse.maven:oculus-581495:6020952")
     implementation fg.deobf("curse.maven:embeddium-908741:5681725")
     implementation fg.deobf("curse.maven:playeranimator-658587:4587214")
